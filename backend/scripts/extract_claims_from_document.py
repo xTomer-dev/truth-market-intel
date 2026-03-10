@@ -10,66 +10,63 @@ from app.services.claim_extractor import extract_claims
 
 def main() -> None:
     with SessionLocal() as db:
-        latest_document = db.execute(
-            select(Document).order_by(Document.id.desc())
-        ).scalars().first()
+        documents = db.execute(
+            select(Document).order_by(Document.id.asc())
+        ).scalars().all()
 
-        if latest_document is None:
+        if not documents:
             print("No documents found.")
             return
 
-        company = db.get(Company, latest_document.company_id)
-        if company is None:
-            print("Document company not found.")
-            return
-
-        blocks = db.execute(
-            select(SpeakerBlock)
-            .where(SpeakerBlock.document_id == latest_document.id)
-            .order_by(SpeakerBlock.block_index.asc())
-        ).scalars().all()
-
-        if not blocks:
-            print("No speaker blocks found for latest document.")
-            return
-
-        block_ids = [block.id for block in blocks]
-
-        db.execute(
-            delete(Claim).where(Claim.speaker_block_id.in_(block_ids))
-        )
-        db.commit()
-
         inserted = 0
 
-        for block in blocks:
-            claims, method = extract_claims(
-                speaker=block.speaker,
-                text=block.text,
-            )
+        for document in documents:
+            company = db.get(Company, document.company_id)
+            if company is None:
+                continue
 
-            for extracted in claims:
-                claim = Claim(
-                    company_id=company.id,
-                    event_id=None,
-                    speaker_block_id=block.id,
-                    topic=extracted.topic,
+            blocks = db.execute(
+                select(SpeakerBlock)
+                .where(SpeakerBlock.document_id == document.id)
+                .order_by(SpeakerBlock.block_index.asc())
+            ).scalars().all()
+
+            if not blocks:
+                continue
+
+            block_ids = [block.id for block in blocks]
+
+            db.execute(
+                delete(Claim).where(Claim.speaker_block_id.in_(block_ids))
+            )
+            db.commit()
+
+            for block in blocks:
+                claims, method = extract_claims(
                     speaker=block.speaker,
-                    claim_text=extracted.claim_text,
-                    source_text=extracted.source_text,
-                    status="new",
-                    claim_type=extracted.claim_type,
-                    extraction_method=method,
-                    confidence=extracted.confidence,
+                    text=block.text,
                 )
-                db.add(claim)
-                inserted += 1
+
+                for extracted in claims:
+                    db.add(
+                        Claim(
+                            company_id=company.id,
+                            event_id=None,
+                            speaker_block_id=block.id,
+                            topic=extracted.topic,
+                            speaker=block.speaker,
+                            claim_text=extracted.claim_text,
+                            source_text=extracted.source_text,
+                            status="new",
+                            claim_type=extracted.claim_type,
+                            extraction_method=method,
+                            confidence=extracted.confidence,
+                        )
+                    )
+                    inserted += 1
 
         db.commit()
-
-        print(
-            f"Inserted {inserted} claims from document_id={latest_document.id} for ticker={company.ticker}."
-        )
+        print(f"Inserted {inserted} claims across all documents.")
 
 
 if __name__ == "__main__":

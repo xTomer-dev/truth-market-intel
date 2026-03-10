@@ -19,6 +19,10 @@ class Company(Base):
         back_populates="company",
         cascade="all, delete-orphan",
     )
+    documents: Mapped[list["Document"]] = relationship(
+        back_populates="company",
+        cascade="all, delete-orphan",
+    )
     claims: Mapped[list["Claim"]] = relationship(
         back_populates="company",
         cascade="all, delete-orphan",

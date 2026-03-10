@@ -18,10 +18,8 @@ class Document(Base):
     )
 
     document_type: Mapped[str] = mapped_column(String(64), index=True)
-
-    title: Mapped[Optional[str]] = mapped_column(String(512))
-    source_url: Mapped[Optional[str]] = mapped_column(String(1024))
-
+    title: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
+    source_url: Mapped[Optional[str]] = mapped_column(String(1024), nullable=True)
     raw_text: Mapped[str] = mapped_column(Text)
 
     created_at: Mapped[datetime] = mapped_column(
@@ -29,6 +27,7 @@ class Document(Base):
         server_default=func.now()
     )
 
+    company: Mapped["Company"] = relationship(back_populates="documents")
     speaker_blocks: Mapped[list["SpeakerBlock"]] = relationship(
         back_populates="document",
         cascade="all, delete-orphan"
