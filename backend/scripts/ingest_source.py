@@ -36,11 +36,19 @@ def main() -> None:
             raise ValueError("--file is required for earnings_call_manual")
         kwargs["text"] = Path(args.file).read_text(encoding="utf-8")
         kwargs["source_url"] = args.source_url
+
     elif args.source == "url_text":
         if not args.url:
             raise ValueError("--url is required for url_text")
         kwargs["url"] = args.url
         kwargs["document_type"] = args.document_type
+
+    elif args.source == "ir_html":
+        if not args.url:
+            raise ValueError("--url is required for ir_html")
+        kwargs["url"] = args.url
+        kwargs["document_type"] = args.document_type
+
     else:
         raise ValueError(f"Unsupported source wiring in CLI: {args.source}")
 
