@@ -6,7 +6,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     env: str = "development"
-    app_name: str = "truth-market-intel"
+    app_name: str = "MarketDataProject/0.1"
     app_version: str = "0.1.0"
     database_url: str
     openai_api_key: Optional[str] = None
