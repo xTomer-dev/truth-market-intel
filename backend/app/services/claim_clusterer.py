@@ -15,17 +15,17 @@ def infer_cluster_key(topic: Optional[str], claim_text: str) -> str:
     if topic:
         return topic.strip().lower()
 
-    if "demand" in normalized:
+    if "demand" in normalized or "orders" in normalized or "backlog" in normalized:
         return "demand"
-    if "margin" in normalized or "profitability" in normalized:
+    if "margin" in normalized or "margins" in normalized or "profitability" in normalized or "under pressure" in normalized:
         return "margin"
-    if "revenue" in normalized or "sales" in normalized:
+    if "revenue" in normalized or "sales" in normalized or "growth" in normalized:
         return "revenue"
-    if "capex" in normalized or "capital expenditure" in normalized:
+    if "capex" in normalized or "capital expenditure" in normalized or "capital spending" in normalized:
         return "capex"
     if "inventory" in normalized:
         return "inventory"
-    if "hiring" in normalized or "headcount" in normalized:
+    if "hiring" in normalized or "headcount" in normalized or "workforce" in normalized:
         return "hiring"
     if "guidance" in normalized or "outlook" in normalized or "expect" in normalized:
         return "guidance"
