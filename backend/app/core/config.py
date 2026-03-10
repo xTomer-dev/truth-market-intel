@@ -12,6 +12,9 @@ class Settings(BaseSettings):
     openai_api_key: Optional[str] = None
     openai_model: str = "gpt-4.1-mini"
 
+    sec_user_agent_name: str = "TruthMarketIntel/0.1"
+    sec_user_agent_email: str = "research@example.com"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

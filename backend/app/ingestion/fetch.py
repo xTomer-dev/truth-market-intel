@@ -1,15 +1,29 @@
 from __future__ import annotations
 
+from urllib.parse import urlparse
+
 import requests
+
+from app.ingestion.sec_headers import build_sec_headers
 
 
 DEFAULT_HEADERS = {
-    "User-Agent": "truth-market-intel/0.1 (+https://github.com/xTomer-dev/truth-market-intel)"
+    "User-Agent": "MarketDataProject/0.1",
+    "Accept-Encoding": "gzip, deflate",
 }
 
 
-def fetch_text_from_url(url: str, timeout: int = 20) -> str:
-    response = requests.get(url, headers=DEFAULT_HEADERS, timeout=timeout)
+def choose_headers(url: str) -> dict[str, str]:
+    host = urlparse(url).netloc.lower()
+
+    if host.endswith("sec.gov"):
+        return build_sec_headers()
+
+    return DEFAULT_HEADERS
+
+
+def fetch_text_from_url(url: str, timeout: int = 30) -> str:
+    response = requests.get(url, headers=choose_headers(url), timeout=timeout)
     response.raise_for_status()
 
     content_type = response.headers.get("Content-Type", "").lower()
