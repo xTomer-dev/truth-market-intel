@@ -26,6 +26,8 @@ def main() -> None:
             print(f"Type: {claim.claim_type}")
             print(f"Method: {claim.extraction_method}")
             print(f"Confidence: {claim.confidence}")
+            print(f"Polarity: {claim.polarity}")
+            print(f"Strength: {claim.strength}")
             print(f"Claim: {claim.claim_text}")
             print(f"Source: {claim.source_text}")
 

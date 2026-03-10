@@ -24,6 +24,7 @@ def list_drift(db: Session = Depends(get_db)) -> list[dict]:
             "current_document_id": drift.current_document_id,
             "previous_document_id": drift.previous_document_id,
             "drift_type": drift.drift_type,
+            "shift_type": drift.shift_type,
             "cluster_key": cluster.cluster_key,
             "topic": cluster.topic,
             "label": cluster.label,

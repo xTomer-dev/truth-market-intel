@@ -3,9 +3,30 @@ from collections import defaultdict
 from sqlalchemy import delete, select
 
 from app.db.session import SessionLocal
+from app.models.claim import Claim
+from app.models.claim_evidence import ClaimEvidence
 from app.models.cluster_presence import ClusterPresence
 from app.models.document import Document
 from app.models.document_drift import DocumentDrift
+from app.models.speaker_block import SpeakerBlock
+from app.services.narrative_shift import classify_shift
+
+
+def get_document_cluster_claim_map(db, document_id: int) -> dict[int, Claim]:
+    rows = db.execute(
+        select(ClaimEvidence, Claim, SpeakerBlock)
+        .join(Claim, Claim.id == ClaimEvidence.claim_id)
+        .join(SpeakerBlock, SpeakerBlock.id == ClaimEvidence.speaker_block_id)
+        .where(SpeakerBlock.document_id == document_id)
+        .order_by(Claim.id.asc())
+    ).all()
+
+    mapping: dict[int, Claim] = {}
+    for evidence, claim, speaker_block in rows:
+        if evidence.claim_cluster_id not in mapping:
+            mapping[evidence.claim_cluster_id] = claim
+
+    return mapping
 
 
 def main() -> None:
@@ -50,8 +71,15 @@ def main() -> None:
                         ).all()
                     }
 
+                current_claim_map = get_document_cluster_claim_map(db, current_doc.id)
+                previous_claim_map = (
+                    get_document_cluster_claim_map(db, previous_doc.id)
+                    if previous_doc is not None
+                    else {}
+                )
+
                 new_clusters = current_cluster_ids - previous_cluster_ids
-                repeated_clusters = current_cluster_ids & previous_cluster_ids
+                overlapping_clusters = current_cluster_ids & previous_cluster_ids
                 dropped_clusters = previous_cluster_ids - current_cluster_ids
 
                 for cluster_id in sorted(new_clusters):
@@ -62,11 +90,22 @@ def main() -> None:
                             previous_document_id=previous_doc.id if previous_doc else None,
                             claim_cluster_id=cluster_id,
                             drift_type="new",
+                            shift_type="new",
                         )
                     )
                     inserted += 1
 
-                for cluster_id in sorted(repeated_clusters):
+                for cluster_id in sorted(overlapping_clusters):
+                    previous_claim = previous_claim_map.get(cluster_id)
+                    current_claim = current_claim_map.get(cluster_id)
+
+                    shift_type = classify_shift(
+                        previous_polarity=previous_claim.polarity if previous_claim else None,
+                        previous_strength=previous_claim.strength if previous_claim else None,
+                        current_polarity=current_claim.polarity if current_claim else None,
+                        current_strength=current_claim.strength if current_claim else None,
+                    )
+
                     db.add(
                         DocumentDrift(
                             company_id=company_id,
@@ -74,6 +113,7 @@ def main() -> None:
                             previous_document_id=previous_doc.id if previous_doc else None,
                             claim_cluster_id=cluster_id,
                             drift_type="repeated",
+                            shift_type=shift_type,
                         )
                     )
                     inserted += 1
@@ -86,6 +126,7 @@ def main() -> None:
                             previous_document_id=previous_doc.id if previous_doc else None,
                             claim_cluster_id=cluster_id,
                             drift_type="dropped",
+                            shift_type="dropped",
                         )
                     )
                     inserted += 1

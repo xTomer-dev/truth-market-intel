@@ -36,6 +36,9 @@ class Claim(Base):
     extraction_method: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     confidence: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
 
+    polarity: Mapped[Optional[str]] = mapped_column(String(32), nullable=True, index=True)
+    strength: Mapped[Optional[str]] = mapped_column(String(32), nullable=True, index=True)
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=False),
         server_default=func.now(),

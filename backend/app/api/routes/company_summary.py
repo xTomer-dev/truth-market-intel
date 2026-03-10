@@ -9,6 +9,7 @@ from app.models.claim_evidence import ClaimEvidence
 from app.models.company import Company
 from app.models.document import Document
 from app.models.document_drift import DocumentDrift
+from app.models.speaker_block import SpeakerBlock
 
 router = APIRouter()
 
@@ -55,9 +56,13 @@ def get_company_summary(ticker: str, db: Session = Depends(get_db)) -> dict:
 
     for drift, cluster in drift_rows:
         evidence_rows = db.execute(
-            select(ClaimEvidence, Claim)
+            select(ClaimEvidence, Claim, SpeakerBlock)
             .join(Claim, Claim.id == ClaimEvidence.claim_id)
-            .where(ClaimEvidence.claim_cluster_id == cluster.id)
+            .join(SpeakerBlock, SpeakerBlock.id == ClaimEvidence.speaker_block_id)
+            .where(
+                ClaimEvidence.claim_cluster_id == cluster.id,
+                SpeakerBlock.document_id == latest_document.id,
+            )
             .order_by(ClaimEvidence.id.asc())
         ).all()
 
@@ -68,6 +73,7 @@ def get_company_summary(ticker: str, db: Session = Depends(get_db)) -> dict:
                 "topic": cluster.topic,
                 "label": cluster.label,
                 "canonical_claim_text": cluster.canonical_claim_text,
+                "shift_type": drift.shift_type,
                 "evidence": [
                     {
                         "claim_id": claim.id,
@@ -75,8 +81,10 @@ def get_company_summary(ticker: str, db: Session = Depends(get_db)) -> dict:
                         "speaker_block_id": claim.speaker_block_id,
                         "claim_text": claim.claim_text,
                         "source_text": evidence.evidence_text,
+                        "polarity": claim.polarity,
+                        "strength": claim.strength,
                     }
-                    for evidence, claim in evidence_rows
+                    for evidence, claim, speaker_block in evidence_rows
                 ],
             }
         )

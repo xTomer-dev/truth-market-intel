@@ -6,6 +6,7 @@ from app.models.company import Company
 from app.models.document import Document
 from app.models.speaker_block import SpeakerBlock
 from app.services.claim_extractor import extract_claims
+from app.services.narrative_shift import infer_polarity, infer_strength
 
 
 def main() -> None:
@@ -48,6 +49,7 @@ def main() -> None:
                 )
 
                 for extracted in claims:
+                    claim_text = extracted.claim_text
                     db.add(
                         Claim(
                             company_id=company.id,
@@ -55,12 +57,14 @@ def main() -> None:
                             speaker_block_id=block.id,
                             topic=extracted.topic,
                             speaker=block.speaker,
-                            claim_text=extracted.claim_text,
+                            claim_text=claim_text,
                             source_text=extracted.source_text,
                             status="new",
                             claim_type=extracted.claim_type,
                             extraction_method=method,
                             confidence=extracted.confidence,
+                            polarity=infer_polarity(claim_text),
+                            strength=infer_strength(claim_text),
                         )
                     )
                     inserted += 1

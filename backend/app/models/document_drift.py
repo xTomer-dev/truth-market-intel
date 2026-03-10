@@ -39,6 +39,7 @@ class DocumentDrift(Base):
     )
 
     drift_type: Mapped[str] = mapped_column(String(32), index=True)
+    shift_type: Mapped[Optional[str]] = mapped_column(String(32), nullable=True, index=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=False),

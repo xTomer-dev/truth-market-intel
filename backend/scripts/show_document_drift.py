@@ -28,6 +28,7 @@ def main() -> None:
             print(f"Cluster Key: {cluster_key}")
             print(f"Label: {label}")
             print(f"Drift Type: {drift.drift_type}")
+            print(f"Shift Type: {drift.shift_type}")
 
 
 if __name__ == "__main__":
