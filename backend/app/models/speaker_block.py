@@ -15,9 +15,11 @@ class SpeakerBlock(Base):
     )
 
     speaker: Mapped[str] = mapped_column(String(255))
-
     block_index: Mapped[int] = mapped_column(Integer)
-
     text: Mapped[str] = mapped_column(Text)
 
     document: Mapped["Document"] = relationship(back_populates="speaker_blocks")
+    claims: Mapped[list["Claim"]] = relationship(
+        back_populates="speaker_block",
+        cascade="all, delete-orphan",
+    )

@@ -23,3 +23,7 @@ class Company(Base):
         back_populates="company",
         cascade="all, delete-orphan",
     )
+    claim_clusters: Mapped[list["ClaimCluster"]] = relationship(
+        back_populates="company",
+        cascade="all, delete-orphan",
+    )
