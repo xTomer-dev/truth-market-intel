@@ -18,6 +18,8 @@ class Document(Base):
     )
 
     document_type: Mapped[str] = mapped_column(String(64), index=True)
+    comparison_family: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, index=True)
+
     title: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
     source_url: Mapped[Optional[str]] = mapped_column(String(1024), nullable=True)
 

@@ -48,17 +48,8 @@ pipeline: ingest extract clusters presence drift
 
 rebuild: bootstrap-db pipeline
 
-serve-samples:
-    cd {{backend_dir}} && export PYTHONPATH=$(pwd) && python scripts/serve_sample_data.py
-
 list-sources:
     cd {{backend_dir}} && export PYTHONPATH=$(pwd) && python scripts/list_ingestion_sources.py
-
-list-sec ticker limit="10":
-    cd {{backend_dir}} && export PYTHONPATH=$(pwd) && python scripts/list_sec_filings.py --ticker {{ticker}} --limit {{limit}}
-
-ingest-sec ticker form:
-    cd {{backend_dir}} && export PYTHONPATH=$(pwd) && python scripts/ingest_sec_latest.py --ticker {{ticker}} --form-type {{form}}
 
 show-companies:
     {{psql_bin}} truth_market_intel -c "SELECT id, ticker, name FROM companies ORDER BY id;"

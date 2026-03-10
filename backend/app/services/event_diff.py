@@ -27,15 +27,22 @@ class EvidenceRecord:
     strength: str | None
 
 
-def _pick_latest_document(db: Session, company_id: int) -> Document | None:
-    return db.execute(
-        select(Document)
-        .where(Document.company_id == company_id)
-        .order_by(
-            Document.published_at.desc().nullslast(),
-            Document.id.desc(),
-        )
-    ).scalars().first()
+def _pick_latest_document(
+    db: Session,
+    company_id: int,
+    comparison_family: str | None,
+) -> Document | None:
+    stmt = select(Document).where(Document.company_id == company_id)
+
+    if comparison_family:
+        stmt = stmt.where(Document.comparison_family == comparison_family)
+
+    stmt = stmt.order_by(
+        Document.published_at.desc().nullslast(),
+        Document.id.desc(),
+    )
+
+    return db.execute(stmt).scalars().first()
 
 
 def _load_current_document_evidence(
@@ -77,7 +84,11 @@ def _sort_bucket(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return sorted(items, key=sort_key)
 
 
-def build_event_diff_for_ticker(db: Session, ticker: str) -> dict[str, Any]:
+def build_event_diff_for_ticker(
+    db: Session,
+    ticker: str,
+    comparison_family: str | None = None,
+) -> dict[str, Any]:
     company = db.execute(
         select(Company).where(Company.ticker == ticker.upper())
     ).scalars().first()
@@ -85,12 +96,17 @@ def build_event_diff_for_ticker(db: Session, ticker: str) -> dict[str, Any]:
     if company is None:
         raise ValueError(f"Company not found: {ticker}")
 
-    latest_document = _pick_latest_document(db, company.id)
+    latest_document = _pick_latest_document(
+        db=db,
+        company_id=company.id,
+        comparison_family=comparison_family,
+    )
 
     if latest_document is None:
         return {
             "ticker": company.ticker,
             "company_name": company.name,
+            "comparison_family": comparison_family,
             "latest_document_id": None,
             "previous_document_id": None,
             "event_diff": {
@@ -103,12 +119,14 @@ def build_event_diff_for_ticker(db: Session, ticker: str) -> dict[str, Any]:
             },
         }
 
-    drift_rows = db.execute(
+    drift_stmt = (
         select(DocumentDrift, ClaimCluster)
         .join(ClaimCluster, ClaimCluster.id == DocumentDrift.claim_cluster_id)
         .where(DocumentDrift.current_document_id == latest_document.id)
         .order_by(DocumentDrift.id.asc())
-    ).all()
+    )
+
+    drift_rows = db.execute(drift_stmt).all()
 
     previous_document_id = None
     if drift_rows:
@@ -160,9 +178,10 @@ def build_event_diff_for_ticker(db: Session, ticker: str) -> dict[str, Any]:
         else:
             buckets["repeated"].append(item)
 
-    result = {
+    return {
         "ticker": company.ticker,
         "company_name": company.name,
+        "comparison_family": latest_document.comparison_family,
         "latest_document_id": latest_document.id,
         "previous_document_id": previous_document_id,
         "event_diff": {
@@ -174,5 +193,3 @@ def build_event_diff_for_ticker(db: Session, ticker: str) -> dict[str, Any]:
             "repeated": _sort_bucket(buckets["repeated"]),
         },
     }
-
-    return result

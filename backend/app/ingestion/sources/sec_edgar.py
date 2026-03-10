@@ -8,6 +8,9 @@ from app.ingestion.schemas import IngestionDocument
 from app.ingestion.sec_client import get_latest_filing_for_ticker
 
 
+MIN_SEC_TEXT_LENGTH = 1000
+
+
 def build_latest_sec_filing_document(
     ticker: str,
     form_type: str,
@@ -18,6 +21,12 @@ def build_latest_sec_filing_document(
     raw_html = fetch_text_from_url(filing.primary_document_url)
     extracted_text = html_to_readable_text(raw_html)
     normalized_text = normalize_transcript_text(extracted_text)
+
+    if len(normalized_text) < MIN_SEC_TEXT_LENGTH:
+        raise ValueError(
+            f"SEC extraction failed or produced too little text for {filing.form} "
+            f"({len(normalized_text)} chars) from {filing.primary_document_url}"
+        )
 
     computed_title = title or f"{filing.company_name} {filing.form} {filing.filing_date}"
 

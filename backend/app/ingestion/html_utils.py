@@ -65,19 +65,8 @@ def pick_main_container(soup: BeautifulSoup):
         candidates.sort(key=lambda x: x[0], reverse=True)
         return candidates[0][1]
 
-    block_candidates = soup.find_all(["div", "section"])
-    scored = []
-    for node in block_candidates:
-        text = node.get_text(" ", strip=True)
-        score = len(text)
-        if score > 300:
-            scored.append((score, node))
-
-    if scored:
-        scored.sort(key=lambda x: x[0], reverse=True)
-        return scored[0][1]
-
-    return soup.body or soup
+    body = soup.body or soup
+    return body
 
 
 def extract_text_blocks_from_html(html: str) -> list[str]:
@@ -90,7 +79,12 @@ def extract_text_blocks_from_html(html: str) -> list[str]:
 
     blocks: list[str] = []
 
-    for node in container.find_all(["h1", "h2", "h3", "h4", "p", "li", "div"]):
+    primary_nodes = container.find_all(["h1", "h2", "h3", "h4", "p", "li"])
+    fallback_nodes = container.find_all(["div"])
+
+    nodes = primary_nodes if len(primary_nodes) >= 10 else primary_nodes + fallback_nodes
+
+    for node in nodes:
         text = node.get_text(" ", strip=True)
         if not text:
             continue
@@ -117,4 +111,10 @@ def extract_text_blocks_from_html(html: str) -> list[str]:
 
 def html_to_readable_text(html: str) -> str:
     blocks = extract_text_blocks_from_html(html)
-    return "\n\n".join(blocks).strip()
+
+    if not blocks:
+        return ""
+
+    text = "\n\n".join(blocks).strip()
+    text = re.sub(r"\n{3,}", "\n\n", text).strip()
+    return text

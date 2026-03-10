@@ -4,11 +4,16 @@ from app.services.event_diff import build_event_diff_for_ticker
 
 def main() -> None:
     with SessionLocal() as db:
-        result = build_event_diff_for_ticker(db=db, ticker="NVDA")
+        result = build_event_diff_for_ticker(
+            db=db,
+            ticker="NVDA",
+            comparison_family="earnings_call",
+        )
 
     print("=" * 80)
     print(f"Ticker: {result['ticker']}")
     print(f"Company: {result['company_name']}")
+    print(f"Family: {result['comparison_family']}")
     print(f"Latest Document ID: {result['latest_document_id']}")
     print(f"Previous Document ID: {result['previous_document_id']}")
 

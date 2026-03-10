@@ -3,6 +3,7 @@ from datetime import datetime
 from sqlalchemy import select
 
 from app.db.session import SessionLocal
+from app.ingestion.families import infer_comparison_family
 from app.ingestion.schemas import IngestionDocument
 from app.ingestion.segmenters.speaker_blocks import split_speaker_blocks
 from app.models.company import Company
@@ -64,6 +65,7 @@ def persist_document(doc: IngestionDocument) -> tuple[int, bool]:
         document = Document(
             company_id=company.id,
             document_type=doc.document_type,
+            comparison_family=infer_comparison_family(doc.document_type),
             title=doc.title,
             source_url=doc.source_url,
             published_at=parse_published_at(doc.published_at),
