@@ -23,10 +23,12 @@ def main() -> None:
             print(f"Ticker: {ticker}")
             print(f"Type: {document.document_type}")
             print(f"Title: {document.title}")
+            print(f"Source URL: {document.source_url}")
             print(f"Published At: {document.published_at}")
             print(f"External ID: {document.external_id}")
             print(f"Content Hash: {document.content_hash}")
             print(f"Ingestion Source: {document.ingestion_source}")
+            print(f"Metadata: {document.metadata_json}")
 
 
 if __name__ == "__main__":

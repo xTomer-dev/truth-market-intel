@@ -48,6 +48,12 @@ pipeline: ingest extract clusters presence drift
 
 rebuild: bootstrap-db pipeline
 
+serve-samples:
+    cd {{backend_dir}} && export PYTHONPATH=$(pwd) && python scripts/serve_sample_data.py
+
+list-sources:
+    cd {{backend_dir}} && export PYTHONPATH=$(pwd) && python scripts/list_ingestion_sources.py
+
 show-companies:
     {{psql_bin}} truth_market_intel -c "SELECT id, ticker, name FROM companies ORDER BY id;"
 
