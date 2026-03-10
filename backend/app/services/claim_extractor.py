@@ -10,8 +10,8 @@ from app.schemas.extracted_claim import ExtractedClaim
 
 TOPIC_KEYWORDS = {
     "demand": [
-        "demand", "orders", "bookings", "backlog", "pipeline",
-        "customer activity", "customer demand",
+        "demand", "orders", "bookings", "backlog",
+        "pipeline", "customer activity", "customer demand",
     ],
     "revenue": [
         "revenue", "sales", "growth", "top line",
@@ -38,7 +38,6 @@ TOPIC_KEYWORDS = {
         "guidance", "outlook", "forecast",
     ],
 }
-
 
 POSITIVE_PATTERNS = [
     r"\bvery strong\b",
