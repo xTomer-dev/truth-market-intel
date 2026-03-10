@@ -3,6 +3,7 @@ from fastapi import APIRouter
 import app.api.routes.claim_clusters as claim_clusters
 import app.api.routes.claims as claims
 import app.api.routes.companies as companies
+import app.api.routes.company_summary as company_summary
 import app.api.routes.drift as drift
 import app.api.routes.health as health
 
@@ -36,4 +37,10 @@ api_router.include_router(
     drift.router,
     prefix="/drift",
     tags=["drift"],
+)
+
+api_router.include_router(
+    company_summary.router,
+    prefix="/company-summary",
+    tags=["company-summary"],
 )
