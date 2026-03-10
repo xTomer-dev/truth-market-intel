@@ -12,25 +12,34 @@ export type NarrativeEvidence = {
   speaker_block_id: number | null;
   claim_text: string;
   source_text: string | null;
+  polarity: string | null;
+  strength: string | null;
 };
 
-export type NarrativeCluster = {
+export type EventDiffItem = {
   cluster_id: number;
   cluster_key: string;
   topic: string | null;
   label: string | null;
   canonical_claim_text: string | null;
+  drift_type: string;
+  shift_type: string | null;
   evidence: NarrativeEvidence[];
 };
 
-export type CompanySummary = {
+export type EventDiffResponse = {
   ticker: string;
   company_name: string;
+  comparison_family: string | null;
   latest_document_id: number | null;
-  summary: {
-    new: NarrativeCluster[];
-    repeated: NarrativeCluster[];
-    dropped: NarrativeCluster[];
+  previous_document_id: number | null;
+  event_diff: {
+    new: EventDiffItem[];
+    dropped: EventDiffItem[];
+    strengthened: EventDiffItem[];
+    weakened: EventDiffItem[];
+    contradicted: EventDiffItem[];
+    repeated: EventDiffItem[];
   };
 };
 
@@ -53,6 +62,11 @@ export async function getCompanies(): Promise<Company[]> {
   return fetchJson<Company[]>("/companies/");
 }
 
-export async function getCompanySummary(ticker: string): Promise<CompanySummary> {
-  return fetchJson<CompanySummary>(`/company-summary/${ticker.toUpperCase()}`);
+export async function getEventDiff(
+  ticker: string,
+  family = "earnings_call",
+): Promise<EventDiffResponse> {
+  return fetchJson<EventDiffResponse>(
+    `/event-diff/${ticker.toUpperCase()}?family=${encodeURIComponent(family)}`,
+  );
 }

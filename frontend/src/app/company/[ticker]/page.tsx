@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 
 import NarrativeItem from "@/components/narrative-item";
 import SectionCard from "@/components/section-card";
-import { getCompanySummary } from "@/lib/api";
+import { getEventDiff } from "@/lib/api";
 
 type CompanyPageProps = {
   params: Promise<{ ticker: string }>;
@@ -13,11 +13,11 @@ export default async function CompanyPage({ params }: CompanyPageProps) {
   const { ticker } = await params;
 
   try {
-    const summary = await getCompanySummary(ticker);
+    const diff = await getEventDiff(ticker, "earnings_call");
 
     return (
       <main className="min-h-screen bg-[#f7f7f4] text-black">
-        <div className="mx-auto max-w-6xl px-6 py-10">
+        <div className="mx-auto max-w-7xl px-6 py-10">
           <div className="mb-8">
             <Link
               href="/"
@@ -29,25 +29,89 @@ export default async function CompanyPage({ params }: CompanyPageProps) {
 
           <header className="mb-10 rounded-3xl border border-black/10 bg-white p-6 shadow-sm">
             <div className="mb-2 text-xs font-medium uppercase tracking-[0.2em] text-black/45">
-              Company Summary
+              Event Diff
             </div>
             <h1 className="text-4xl font-semibold tracking-tight">
-              {summary.ticker}
+              {diff.ticker}
             </h1>
-            <p className="mt-2 text-base text-black/65">{summary.company_name}</p>
-            <div className="mt-4 text-sm text-black/45">
-              Latest document ID: {summary.latest_document_id ?? "N/A"}
+            <p className="mt-2 text-base text-black/65">{diff.company_name}</p>
+
+            <div className="mt-5 flex flex-wrap gap-4 text-sm text-black/45">
+              <span>Family: {diff.comparison_family || "N/A"}</span>
+              <span>Latest document: {diff.latest_document_id ?? "N/A"}</span>
+              <span>Previous document: {diff.previous_document_id ?? "N/A"}</span>
             </div>
           </header>
 
-          <div className="grid gap-6 lg:grid-cols-3">
+          <div className="mb-6 grid gap-4 md:grid-cols-3 xl:grid-cols-6">
+            <Metric label="Contradicted" value={diff.event_diff.contradicted.length} />
+            <Metric label="Weakened" value={diff.event_diff.weakened.length} />
+            <Metric label="Strengthened" value={diff.event_diff.strengthened.length} />
+            <Metric label="New" value={diff.event_diff.new.length} />
+            <Metric label="Dropped" value={diff.event_diff.dropped.length} />
+            <Metric label="Repeated" value={diff.event_diff.repeated.length} />
+          </div>
+
+          <div className="grid gap-6 xl:grid-cols-2">
             <SectionCard
-              title="New Narratives"
-              count={summary.summary.new.length}
+              title="Contradictions"
+              count={diff.event_diff.contradicted.length}
             >
-              {summary.summary.new.length > 0 ? (
-                summary.summary.new.map((item) => (
-                  <NarrativeItem key={`new-${item.cluster_id}`} item={item} />
+              {diff.event_diff.contradicted.length > 0 ? (
+                diff.event_diff.contradicted.map((item) => (
+                  <NarrativeItem
+                    key={`contradicted-${item.cluster_id}`}
+                    item={item}
+                    tone="danger"
+                  />
+                ))
+              ) : (
+                <EmptyState text="No contradictions detected." />
+              )}
+            </SectionCard>
+
+            <SectionCard
+              title="Weakened"
+              count={diff.event_diff.weakened.length}
+            >
+              {diff.event_diff.weakened.length > 0 ? (
+                diff.event_diff.weakened.map((item) => (
+                  <NarrativeItem
+                    key={`weakened-${item.cluster_id}`}
+                    item={item}
+                    tone="warning"
+                  />
+                ))
+              ) : (
+                <EmptyState text="No weakened narratives detected." />
+              )}
+            </SectionCard>
+
+            <SectionCard
+              title="Strengthened"
+              count={diff.event_diff.strengthened.length}
+            >
+              {diff.event_diff.strengthened.length > 0 ? (
+                diff.event_diff.strengthened.map((item) => (
+                  <NarrativeItem
+                    key={`strengthened-${item.cluster_id}`}
+                    item={item}
+                    tone="success"
+                  />
+                ))
+              ) : (
+                <EmptyState text="No strengthened narratives detected." />
+              )}
+            </SectionCard>
+
+            <SectionCard title="New" count={diff.event_diff.new.length}>
+              {diff.event_diff.new.length > 0 ? (
+                diff.event_diff.new.map((item) => (
+                  <NarrativeItem
+                    key={`new-${item.cluster_id}`}
+                    item={item}
+                    tone="neutral"
+                  />
                 ))
               ) : (
                 <EmptyState text="No new narratives detected." />
@@ -55,31 +119,36 @@ export default async function CompanyPage({ params }: CompanyPageProps) {
             </SectionCard>
 
             <SectionCard
-              title="Repeated Narratives"
-              count={summary.summary.repeated.length}
+              title="Dropped"
+              count={diff.event_diff.dropped.length}
             >
-              {summary.summary.repeated.length > 0 ? (
-                summary.summary.repeated.map((item) => (
+              {diff.event_diff.dropped.length > 0 ? (
+                diff.event_diff.dropped.map((item) => (
                   <NarrativeItem
-                    key={`repeated-${item.cluster_id}`}
+                    key={`dropped-${item.cluster_id}`}
                     item={item}
+                    tone="subtle"
                   />
                 ))
               ) : (
-                <EmptyState text="No repeated narratives detected." />
+                <EmptyState text="No dropped narratives detected." />
               )}
             </SectionCard>
 
             <SectionCard
-              title="Dropped Narratives"
-              count={summary.summary.dropped.length}
+              title="Repeated"
+              count={diff.event_diff.repeated.length}
             >
-              {summary.summary.dropped.length > 0 ? (
-                summary.summary.dropped.map((item) => (
-                  <NarrativeItem key={`dropped-${item.cluster_id}`} item={item} />
+              {diff.event_diff.repeated.length > 0 ? (
+                diff.event_diff.repeated.map((item) => (
+                  <NarrativeItem
+                    key={`repeated-${item.cluster_id}`}
+                    item={item}
+                    tone="subtle"
+                  />
                 ))
               ) : (
-                <EmptyState text="No dropped narratives detected." />
+                <EmptyState text="No repeated narratives detected." />
               )}
             </SectionCard>
           </div>
@@ -89,6 +158,17 @@ export default async function CompanyPage({ params }: CompanyPageProps) {
   } catch {
     notFound();
   }
+}
+
+function Metric({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-2xl border border-black/10 bg-white p-4 shadow-sm">
+      <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-black/45">
+        {label}
+      </div>
+      <div className="mt-2 text-3xl font-semibold tracking-tight">{value}</div>
+    </div>
+  );
 }
 
 function EmptyState({ text }: { text: string }) {
