@@ -54,6 +54,12 @@ serve-samples:
 list-sources:
     cd {{backend_dir}} && export PYTHONPATH=$(pwd) && python scripts/list_ingestion_sources.py
 
+list-sec ticker limit="10":
+    cd {{backend_dir}} && export PYTHONPATH=$(pwd) && python scripts/list_sec_filings.py --ticker {{ticker}} --limit {{limit}}
+
+ingest-sec ticker form:
+    cd {{backend_dir}} && export PYTHONPATH=$(pwd) && python scripts/ingest_sec_latest.py --ticker {{ticker}} --form-type {{form}}
+
 show-companies:
     {{psql_bin}} truth_market_intel -c "SELECT id, ticker, name FROM companies ORDER BY id;"
 
@@ -69,7 +75,10 @@ show-clusters:
 show-drift:
     cd {{backend_dir}} && export PYTHONPATH=$(pwd) && python scripts/show_document_drift.py
 
-status: show-companies show-documents show-claims show-clusters show-drift
+show-event-diff:
+    cd {{backend_dir}} && export PYTHONPATH=$(pwd) && python scripts/show_event_diff.py
+
+status: show-companies show-documents show-claims show-clusters show-drift show-event-diff
 
 api:
     cd {{backend_dir}} && export PYTHONPATH=$(pwd) && uvicorn app.main:app --reload
