@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 
 from sqlalchemy import select
@@ -9,6 +10,9 @@ from app.ingestion.segmenters.speaker_blocks import split_speaker_blocks
 from app.models.company import Company
 from app.models.document import Document
 from app.models.speaker_block import SpeakerBlock
+from app.models.wedge_core import EventTypeEnum, WedgeEvent, document_reports_event
+
+logger = logging.getLogger(__name__)
 
 
 def parse_published_at(value: str | None) -> datetime | None:
@@ -93,4 +97,61 @@ def persist_document(doc: IngestionDocument) -> tuple[int, bool]:
             )
 
         db.commit()
+
+        # ── Wedge-core v1: infer Event from document ──────────────────────
+        _maybe_create_event(db, document)
+
         return document.id, True
+
+
+# ── Event type heuristics ─────────────────────────────────────────────────
+
+EVENT_TYPE_HEURISTICS = {
+    "capital_event": [
+        "raises", "offering", "equity", "dilution", "atm", "shelf",
+    ],
+    "commercial_milestone": [
+        "agreement", "partnership", "contract", "deal", "carrier",
+    ],
+    "technical_milestone": [
+        "launches", "deploys", "satellite", "test", "orbit", "bluebird",
+    ],
+    "earnings_release": [
+        "earnings", "results", "quarter", "q1", "q2", "q3", "q4",
+    ],
+}
+
+
+def infer_event_type(subject: str) -> EventTypeEnum:
+    s = subject.lower()
+    for event_type, keywords in EVENT_TYPE_HEURISTICS.items():
+        if any(k in s for k in keywords):
+            return EventTypeEnum(event_type)
+    return EventTypeEnum.other
+
+
+def _maybe_create_event(db, document: Document) -> None:
+    """Create a WedgeEvent if the document type warrants it."""
+    doc_type = (document.document_type or "").lower()
+    if doc_type not in ("8-k", "press_release"):
+        return
+
+    subject = document.title or document.period or ""
+    event = WedgeEvent(
+        company_id=document.company_id,
+        name=subject,
+        type=infer_event_type(subject),
+        occurred_at=document.published_at,
+    )
+    db.add(event)
+    db.commit()
+    db.refresh(event)
+
+    db.execute(
+        document_reports_event.insert().values(
+            document_id=document.id,
+            event_id=event.id,
+        )
+    )
+    db.commit()
+    logger.info("Created WedgeEvent %s for document %s", event.id, document.id)

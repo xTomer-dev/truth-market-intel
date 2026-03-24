@@ -1,10 +1,12 @@
+import uuid
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import JSON, DateTime, ForeignKey, String, Text, func
+from sqlalchemy import JSON, DateTime, Enum, ForeignKey, String, Text, Uuid, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+from app.models.wedge_core import DocumentTypeEnum
 
 
 class Document(Base):
@@ -17,6 +19,7 @@ class Document(Base):
         index=True,
     )
 
+    # DEPRECATED: superseded by wedge-core v1 wc_type (DocumentTypeEnum) — remove after migration verified
     document_type: Mapped[str] = mapped_column(String(64), index=True)
     comparison_family: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, index=True)
 
@@ -39,6 +42,25 @@ class Document(Base):
         DateTime(timezone=False),
         server_default=func.now(),
         nullable=False,
+    )
+
+    # ── Wedge-core v1 additions ────────────────────────────────────────────
+    wc_type: Mapped[Optional[DocumentTypeEnum]] = mapped_column(
+        Enum(
+            DocumentTypeEnum,
+            name="document_type_v2_enum",
+            create_constraint=True,
+        ),
+        nullable=True,
+    )
+    period: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    raw_text_path: Mapped[Optional[str]] = mapped_column(
+        String(1024), nullable=True
+    )
+    filed_by_person_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        Uuid,
+        ForeignKey("persons.id", ondelete="SET NULL"),
+        nullable=True,
     )
 
     company: Mapped["Company"] = relationship(back_populates="documents")

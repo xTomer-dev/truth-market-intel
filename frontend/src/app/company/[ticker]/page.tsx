@@ -28,8 +28,16 @@ export default async function CompanyPage({ params }: CompanyPageProps) {
           </div>
 
           <header className="mb-10 rounded-3xl border border-black/10 bg-white p-6 shadow-sm">
-            <div className="mb-2 text-xs font-medium uppercase tracking-[0.2em] text-black/45">
-              Event Diff
+            <div className="mb-2 flex items-start justify-between">
+              <div className="text-xs font-medium uppercase tracking-[0.2em] text-black/45">
+                Event Diff
+              </div>
+              <Link
+                href={`/intelligence/${diff.ticker}`}
+                className="rounded-full border border-black/15 bg-black/[0.04] px-3 py-1 text-xs font-medium text-black/55 transition hover:bg-black/[0.08] hover:text-black"
+              >
+                Intelligence →
+              </Link>
             </div>
             <h1 className="text-4xl font-semibold tracking-tight">
               {diff.ticker}

@@ -262,3 +262,182 @@ def extract_claims(speaker: str, text: str) -> tuple[list[ExtractedClaim], str]:
         return claims, "openai"
 
     return extract_claims_regex(text), "regex_v2"
+
+
+# ── Wedge-core v2 extraction (async, Anthropic, tool_use) ────────────────
+
+import logging
+import pathlib
+
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+
+from app.core.anthropic_client import get_anthropic_client
+from app.models.wedge_core import (
+    EvidenceSpan,
+    HorizonEnum,
+    PolarityEnum,
+)
+from app.models.claim import Claim
+from app.models.document import Document
+
+logger = logging.getLogger(__name__)
+
+_V2_SYSTEM_PROMPT = (
+    "You are a financial analyst assistant specializing in extracting "
+    "investor-relevant claims from earnings calls, 10-K/10-Q filings, "
+    "and 8-K disclosures.\n\n"
+    "Extract only claims that are specific, attributable, and investor-relevant. "
+    "Do not extract generic boilerplate, legal disclaimers, or definitions. "
+    "Every verbatim field must be an exact quote from the source text. "
+    "Confidence reflects how clearly this is a substantive claim vs. noise. "
+    "For earnings calls: attribute the correct speaker role. "
+    "For filings: use actual document section names."
+)
+
+_V2_TOOL = {
+    "name": "extract_narrative_claims",
+    "description": (
+        "Extract investor-relevant claims from a financial document. "
+        "Each claim must be grounded in a specific span of text."
+    ),
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "claims": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "required": [
+                        "verbatim", "summary", "polarity", "confidence",
+                        "horizon", "speaker", "section",
+                        "char_offset_start", "char_offset_end",
+                    ],
+                    "properties": {
+                        "verbatim": {"type": "string"},
+                        "summary": {"type": "string"},
+                        "polarity": {
+                            "type": "string",
+                            "enum": ["positive", "negative", "neutral", "cautious"],
+                        },
+                        "confidence": {
+                            "type": "number", "minimum": 0, "maximum": 1,
+                        },
+                        "horizon": {
+                            "type": "string",
+                            "enum": [
+                                "immediate", "near_term", "medium_term",
+                                "long_term", "unspecified",
+                            ],
+                        },
+                        "speaker": {"type": "string"},
+                        "section": {"type": "string"},
+                        "char_offset_start": {"type": "integer"},
+                        "char_offset_end": {"type": "integer"},
+                        "narrative_thread_hint": {
+                            "type": "string",
+                            "description": (
+                                "Short label for the narrative thread. "
+                                "Examples: Carrier Partnership Moat, "
+                                "Capital Adequacy, Technical Feasibility."
+                            ),
+                        },
+                    },
+                },
+            },
+        },
+        "required": ["claims"],
+    },
+}
+
+
+async def extract_claims_v2(
+    document: Document,
+    db: AsyncSession,
+) -> list[Claim]:
+    """Wedge-core v2 claim extraction using Anthropic tool_use."""
+
+    # STEP 5.1 — Load document text
+    text = None
+    if document.raw_text_path:
+        path = pathlib.Path(document.raw_text_path)
+        if path.exists():
+            text = path.read_text()
+        else:
+            logger.warning("raw_text_path does not exist: %s", document.raw_text_path)
+    if text is None:
+        text = document.raw_text
+    if not text:
+        logger.warning("No text available for document %s", document.id)
+        return []
+
+    # STEP 5.2 — Call Anthropic API with tool_use
+    client = get_anthropic_client()
+    response = await client.messages.create(
+        model="claude-sonnet-4-20250514",
+        max_tokens=4096,
+        system=_V2_SYSTEM_PROMPT,
+        tools=[_V2_TOOL],
+        tool_choice={"type": "tool", "name": "extract_narrative_claims"},
+        messages=[{
+            "role": "user",
+            "content": f"Extract claims from this document:\n\n{text}",
+        }],
+    )
+
+    # Parse response: find the tool_use content block
+    extracted_claims = []
+    for block in response.content:
+        if block.type == "tool_use" and block.name == "extract_narrative_claims":
+            extracted_claims = block.input.get("claims", [])
+            break
+
+    if not extracted_claims:
+        logger.info("No claims extracted for document %s", document.id)
+        return []
+
+    # STEP 5.3 — Persist EvidenceSpan + Claim for each extracted claim
+    claims = []
+    for item in extracted_claims:
+        # 5.3a — Create EvidenceSpan
+        span = EvidenceSpan(
+            document_id=document.id,
+            text=item["verbatim"],
+            char_offset_start=item.get("char_offset_start", 0),
+            char_offset_end=item.get("char_offset_end", 0),
+            speaker=item.get("speaker"),
+            section=item.get("section"),
+        )
+        db.add(span)
+        await db.flush()
+
+        # 5.3b — Resolve NarrativeThread via canonical deduplication
+        from app.services.thread_resolver import resolve_thread
+        hint = item.get("narrative_thread_hint", "General")
+        thread = await resolve_thread(hint, document.company_id, db)
+
+        # 5.3c — Create Claim
+        claim = Claim(
+            evidence_span_id=span.id,
+            narrative_thread_id=thread.id,
+            company_id=document.company_id,
+            claim_text=item["verbatim"],
+            verbatim=span.text,
+            summary=item["summary"],
+            polarity=item["polarity"],
+            wc_polarity=PolarityEnum(item["polarity"]),
+            confidence=item["confidence"],
+            horizon=HorizonEnum(item["horizon"]),
+            extraction_method="anthropic_v2",
+        )
+        db.add(claim)
+        await db.flush()
+        claims.append(claim)
+
+    # STEP 5.4 — Call normalizer
+    from app.services.state_delta_normalizer import normalize
+    await normalize(claims, db)
+
+    # STEP 5.5 — Commit and return
+    await db.commit()
+    return claims

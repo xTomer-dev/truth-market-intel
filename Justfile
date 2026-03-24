@@ -74,4 +74,17 @@ status: show-companies show-documents show-claims show-clusters show-drift show-
 api:
     cd {{backend_dir}} && export PYTHONPATH=$(pwd) && uvicorn app.main:app --reload
 
+migrate:
+    cd {{backend_dir}} && export PYTHONPATH=$(pwd) && alembic upgrade head
+
+extract-v2 ticker="ASTS":
+    cd {{backend_dir}} && export PYTHONPATH=$(pwd) && python scripts/extract_claims_v2.py --ticker {{ticker}}
+
+pipeline-v2 ticker="ASTS": extract-v2
+
+seed-asts:
+    cd {{backend_dir}} && export PYTHONPATH=$(pwd) && python scripts/seed_asts_synthetic.py
+
+reset-and-seed: bootstrap-db seed-asts
+
 dev: rebuild status

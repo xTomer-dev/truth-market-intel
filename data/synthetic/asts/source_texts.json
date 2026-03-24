@@ -1,0 +1,32 @@
+[
+  {
+    "doc_key": "q1_2024_earnings",
+    "title": "AST SpaceMobile Q1 2024 Earnings Call",
+    "period": "Q1-2024",
+    "text": "We are on track to launch our Block 2 BlueBird satellites in Q3 2024. Our constellation expansion is proceeding according to plan with five satellites already in orbit providing commercial service to select carrier partners. AT&T and Verizon have confirmed expanded pilot agreements covering 35 million subscribers. Cash runway stands at approximately 14 months at current burn rate of $28 million per quarter. We have experienced no orbital debris incidents and our technical team has validated peak throughput of 52 Mbps per satellite. Revenue visibility remains limited given our pre-commercial stage, however our carrier partnership pipeline has expanded to include negotiations with three tier-1 carriers in Europe."
+  },
+  {
+    "doc_key": "q2_2024_earnings",
+    "title": "AST SpaceMobile Q2 2024 Earnings Call",
+    "period": "Q2-2024",
+    "text": "Block 2 satellite launch occurred on schedule in August. We now have 17 satellites in orbit across our early constellation. AT&T has signed a definitive commercial agreement and Verizon remains in final contract negotiations. Cash position improved following our $200 million convertible note offering, extending runway to 22 months. Burn rate increased to $34 million per quarter reflecting accelerated constellation build. Peak throughput testing achieved 64 Mbps on latest generation hardware. Spectrum interference risk in the 850 MHz band remains a regulatory concern pending FCC ruling expected Q4 2024. We are cautious about guidance given regulatory uncertainty, but remain on track for commercial launch to general consumers by mid-2025."
+  },
+  {
+    "doc_key": "q3_2024_8k_fcc",
+    "title": "AST SpaceMobile 8-K: FCC Waiver Received",
+    "period": "Q3-2024",
+    "text": "AST SpaceMobile announced today that it has received a conditional waiver from the FCC to operate its direct-to-device satellite service in the 850 MHz band with power limits of -174 dBm/Hz. This waiver removes the primary regulatory overhang and enables commercial service launch on schedule. The company believes this ruling will accelerate carrier negotiations and reduce spectrum-related risk materially."
+  },
+  {
+    "doc_key": "q4_2024_earnings",
+    "title": "AST SpaceMobile Q4 2024 Earnings Call",
+    "period": "Q4-2024",
+    "text": "We ended 2024 with 24 Block 2 satellites in orbit. Commercial service with AT&T launched January 15, 2025, ahead of the mid-2025 target. Verizon commercial agreement signed December 2024. Vodafone signed an MOU for European markets. Cash position $312 million, burn rate $38 million per quarter, runway approximately 20 months. We raised guidance for 2025: targeting 45 satellites by year-end and revenue of $40-60 million. Management credibility improved significantly with on-time delivery of the Block 2 constellation. Competitive pressure from Starlink direct-to-cell remains elevated but we believe our carrier-embedded model provides a distinct moat."
+  },
+  {
+    "doc_key": "q1_2025_earnings",
+    "title": "AST SpaceMobile Q1 2025 Earnings Call",
+    "period": "Q1-2025",
+    "text": "Q1 2025 revenue of $12.4 million, ahead of consensus. AT&T commercial subscribers reached 180,000. We launched an additional 6 satellites in March bringing constellation to 30. Cash burn increased to $44 million per quarter as we scale ground operations. Balance sheet shows $268 million cash; we are evaluating additional financing to ensure runway through Block 3 constellation completion. Carrier concentration risk: AT&T represents 78% of current revenue. We expect Verizon and Vodafone to reduce this concentration by Q4 2025. Technical performance strong: average throughput 58 Mbps, 99.2% uptime."
+  }
+]
