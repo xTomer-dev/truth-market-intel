@@ -6,6 +6,7 @@ from sqlalchemy import select
 from app.db.session import SessionLocal
 from app.ingestion.families import infer_comparison_family
 from app.ingestion.schemas import IngestionDocument
+from app.ingestion.segmenters.paragraphs import split_paragraphs
 from app.ingestion.segmenters.speaker_blocks import split_speaker_blocks
 from app.models.company import Company
 from app.models.document import Document
@@ -84,7 +85,16 @@ def persist_document(doc: IngestionDocument) -> tuple[int, bool]:
         db.commit()
         db.refresh(document)
 
-        blocks = split_speaker_blocks(doc.normalized_text)
+        # Route to the right segmenter.
+        # Transcript-like types produce SPEAKER: patterns; everything else
+        # (SEC filings, press releases) uses section-aware paragraph splitting.
+        _TRANSCRIPT_TYPES = {"earnings_call", "transcript", "conference_call", "earnings_transcript"}
+        if doc.document_type.lower().replace("-", "_") in _TRANSCRIPT_TYPES:
+            blocks = split_speaker_blocks(doc.normalized_text)
+            if not blocks:
+                blocks = split_paragraphs(doc.normalized_text)
+        else:
+            blocks = split_paragraphs(doc.normalized_text)
 
         for idx, block in enumerate(blocks):
             db.add(

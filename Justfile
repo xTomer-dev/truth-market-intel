@@ -87,6 +87,15 @@ seed-asts:
 
 reset-and-seed: bootstrap-db seed-asts
 
+digest-asts since="2024-01-01" forms="10-K,10-Q,8-K":
+    cd {{backend_dir}} && export PYTHONPATH=$(pwd) && python scripts/digest_asts.py --since {{since}} --forms {{forms}}
+
+show-digested-asts segments="5":
+    cd {{backend_dir}} && export PYTHONPATH=$(pwd) && python scripts/show_digested_asts.py --segments {{segments}}
+
+resegment-asts:
+    cd {{backend_dir}} && export PYTHONPATH=$(pwd) && python scripts/resegment_asts.py
+
 dev: rebuild status
 
 frontend:
