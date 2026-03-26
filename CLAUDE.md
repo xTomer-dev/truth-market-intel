@@ -24,11 +24,15 @@ document
 → intelligence UI  
 
 This is the only default product path.  
-Do not introduce or preserve parallel legacy pipelines unless explicitly requested.
 
+Legacy routes (event-diff, drift, claim-clusters) currently exist and are still wired in the router and UI.
+
+Do not modify or remove legacy pipelines unless explicitly instructed.
+
+All new work must be implemented in the wedge-core pipeline. Legacy is tolerated but not extended.
 ---
 
-## Current live backend surfaces
+## Primary wedge-core surfaces
 
 Core files:
 - backend/app/models/wedge_core.py
@@ -68,6 +72,8 @@ Frontend:
 - Preserve truthful empty responses; never fabricate output.
 - If changing an API shape, inspect frontend consumers.
 - If changing vocabulary behavior, inspect all import sites.
+- Do not read the entire repo by default. Start from the canonical files for the task.
+- After making changes, run the smallest relevant verification command before reporting completion.
 
 ---
 
@@ -79,7 +85,22 @@ Frontend:
 - Thread state history is append-only / supersession-based.
 - Narrative brief is the primary wedge output.
 
+Canonical thread names and state dimensions are defined in backend/app/core/vocabulary.py.
+
+Do not add, modify, or bypass these lists without explicit instruction.
+
+All services must map into this vocabulary before writing to the database.
+
 ---
+
+## Output style
+
+When finishing a task, report:
+1. what changed
+2. files edited
+3. why it is correct
+4. exact verification commands
+5. remaining risks
 
 ## Environment
 
@@ -123,12 +144,3 @@ export PYTHONPATH=$(pwd)
 pytest tests/ -v  
 
 ---
-
-## Output style
-
-When finishing a task, report:
-1. what changed
-2. files edited
-3. why it is correct
-4. exact verification commands
-5. remaining risks
