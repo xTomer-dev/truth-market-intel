@@ -88,3 +88,13 @@ seed-asts:
 reset-and-seed: bootstrap-db seed-asts
 
 dev: rebuild status
+
+frontend:
+	cd frontend && pnpm dev
+
+test:
+	cd backend && source .venv/bin/activate && export PYTHONPATH=$(pwd) && pytest tests/ -v
+
+brief:
+	cd backend && source .venv/bin/activate && export PYTHONPATH=$(pwd) && \
+	curl -s "http://localhost:8000/api/v1/companies/$(ticker)/narrative-brief/?limit=5&min_confidence=0.5" | python3 -m json.tool

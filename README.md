@@ -116,12 +116,18 @@ http://localhost:3000/intelligence/ASTS
 
 ## Commands
 
-just api  
-just frontend  
-just migrate  
-just seed-asts  
-just test  
-just brief ticker=ASTS  
+just api
+just migrate
+just seed-asts
+
+# run UI
+just frontend
+
+# inspect output
+just brief ticker=ASTS
+
+# run tests
+just test
 
 ---
 
